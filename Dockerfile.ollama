@@ -1,0 +1,16 @@
+FROM ollama/ollama:latest
+
+EXPOSE 11434
+
+# Script para descargar el modelo al iniciar
+COPY <<"EOF" /entrypoint.sh
+#!/bin/sh
+ollama serve &
+sleep 5
+ollama pull ${OLLAMA_MODEL:-llama3.2}
+wait
+EOF
+
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

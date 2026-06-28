@@ -1,0 +1,63 @@
+services:
+  # ==========================================
+  # HERMES AGENT - Servicio Principal
+  # ==========================================
+  - type: web
+    name: hermes-agent
+    env: node
+    region: oregon
+    plan: starter
+    buildCommand: npm install && npm run build:prod
+    startCommand: node dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hermes-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: hermes-redis
+          type: redis
+          property: connectionString
+      - key: OLLAMA_URL
+        value: http://hermes-ollama:11434
+      - key: JWT_SECRET
+        generateValue: true
+
+  # ==========================================
+  # OLLAMA - Motor de AI (Docker)
+  # ==========================================
+  - type: worker
+    name: hermes-ollama
+    env: docker
+    region: oregon
+    plan: standard
+    dockerfilePath: ./Dockerfile.ollama
+    envVars:
+      - key: OLLAMA_HOST
+        value: 0.0.0.0
+      - key: OLLAMA_MODEL
+        value: llama3.2
+
+  # ==========================================
+  # COLA DE TRABAJOS (Redis)
+  # ==========================================
+  - type: redis
+    name: hermes-redis
+    region: oregon
+    plan: starter
+    maxmemoryPolicy: allkeys-lru
+
+databases:
+  # ==========================================
+  # POSTGRESQL
+  # ==========================================
+  - name: hermes-db
+    region: oregon
+    plan: starter
+    databaseName: hermes
+    ipAllowList:
+      - 0.0.0.0/0

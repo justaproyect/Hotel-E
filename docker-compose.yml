@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  hermes-agent:
+    build: .
+    ports:
+      - "3000:3000"
+    env_file: .env
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      - hermes-db
+      - hermes-redis
+      - hermes-ollama
+    command: npm run dev
+
+  hermes-ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    command: >
+      sh -c "ollama serve & sleep 5 && ollama pull llama3.2 && wait"
+
+  hermes-db:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: hermes
+      POSTGRES_USER: hermes
+      POSTGRES_PASSWORD: hermes123
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+
+  hermes-redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  ollama_data:
+  pg_data:
