@@ -7,7 +7,7 @@ import { config } from './config';
 import { logger } from './utils/logger';
 import { pool } from './database/connection';
 import adminRoutes from './admin/routes';
-import { whatsapp } from './whatsapp';
+import { whatsappCloud } from './whatsapp/whatsappcloud';
 import { videoScheduler } from './video/scheduler';
 import cron from 'node-cron';
 import path from 'path';
@@ -53,56 +53,22 @@ app.get('/health', async (_req, res) => {
 // ---- API Routes ----
 app.use('/api/admin', adminRoutes);
 
-// ---- WhatsApp Webhook ----
+// ---- WhatsApp Cloud API Webhook ----
 app.get('/api/whatsapp/webhook', (req, res) => {
-  try {
-    const challenge = whatsapp.verifyWebhook(req.query as Record<string, string>);
-    res.status(200).send(challenge);
-  } catch {
-    res.status(403).send('Verification failed');
+  const challenge = whatsappCloud.verifyWebhook(req.query as Record<string, string>);
+  if (challenge) {
+    return void res.status(200).send(challenge);
   }
+  return void res.status(403).send('Verification failed');
 });
 
 app.post('/api/whatsapp/webhook', async (req, res) => {
   try {
-    const entry = req.body?.entry?.[0];
-    const change = entry?.changes?.[0];
-    const message = change?.value?.messages?.[0];
-
-    if (message) {
-      await whatsapp.handleIncomingMessage({
-        From: `whatsapp:${message.from}`,
-        Body: message.text?.body || '',
-        MessageSid: message.id,
-      });
-    }
+    await whatsappCloud.handleIncoming(req.body);
     res.sendStatus(200);
   } catch (error) {
     logger.error({ error }, 'WhatsApp webhook error');
     res.sendStatus(200);
-  }
-});
-
-// ---- Twilio WhatsApp Fallback ----
-app.post('/api/whatsapp/twilio', async (req, res) => {
-  try {
-    await whatsapp.handleIncomingMessage({
-      From: req.body.From,
-      Body: req.body.Body,
-      MessageSid: req.body.MessageSid,
-    });
-    res.send(`
-      <Response>
-        <Message>Mensaje recibido, Hermes está procesando tu solicitud.</Message>
-      </Response>
-    `);
-  } catch (error) {
-    logger.error({ error }, 'Twilio webhook error');
-    res.send(`
-      <Response>
-        <Message>Error procesando tu mensaje. Intenta de nuevo.</Message>
-      </Response>
-    `);
   }
 });
 

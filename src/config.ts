@@ -38,6 +38,14 @@ export const config = {
     whatsappNumber: process.env.TWILIO_WHATSAPP_NUMBER || '',
   },
 
+  whatsapp: {
+    appId: process.env.WA_APP_ID || '',
+    phoneNumberId: process.env.WA_PHONE_NUMBER_ID || '',
+    accessToken: process.env.WA_ACCESS_TOKEN || '',
+    webhookToken: process.env.WA_WEBHOOK_TOKEN || 'hermes_webhook_2024',
+    businessAccountId: process.env.WA_BUSINESS_ACCOUNT_ID || '',
+  },
+
   hotel: {
     name: process.env.HOTEL_NAME || 'Hotel Hermes',
     address: process.env.HOTEL_ADDRESS || '',
