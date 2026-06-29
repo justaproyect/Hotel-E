@@ -17,7 +17,7 @@ export class AiClient {
     this.groqApiKey = process.env.GROQ_API_KEY || '';
     this.ollamaUrl = config.ollama.url;
     this.ollamaModel = config.ollama.model;
-    this.groqModel = process.env.GROQ_MODEL || 'llama3-70b-8192';
+    this.groqModel = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
   }
 
   async chat(messages: AiMessage[], tools?: unknown[]): Promise<string> {
@@ -38,23 +38,31 @@ export class AiClient {
   }
 
   private async groqChat(messages: AiMessage[]): Promise<string> {
-    const { data } = await axios.post(
-      'https://api.groq.com/openai/v1/chat/completions',
-      {
-        model: this.groqModel,
-        messages,
-        temperature: 0.7,
-        max_tokens: 1024,
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${this.groqApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        timeout: 30000,
-      },
-    );
-    return data.choices[0].message.content || '';
+    const modelsToTry = [this.groqModel, 'llama-3.3-70b-versatile', 'llama-3.1-70b-versatile', 'llama3-8b-8192', 'llama-3.1-8b-instant'];
+    let lastError: unknown;
+
+    for (const model of modelsToTry) {
+      try {
+        const { data } = await axios.post(
+          'https://api.groq.com/openai/v1/chat/completions',
+          { model, messages, temperature: 0.7, max_tokens: 1024 },
+          {
+            headers: { Authorization: `Bearer ${this.groqApiKey}`, 'Content-Type': 'application/json' },
+            timeout: 15000,
+          },
+        );
+        if (this.groqModel !== model) {
+          logger.info(`Groq model fallback: ${this.groqModel} -> ${model}`);
+        }
+        return data.choices[0]?.message?.content || '';
+      } catch (error: any) {
+        lastError = error;
+        const groqBody = error.response?.data;
+        logger.warn({ model, groqBody, status: error.response?.status }, 'Groq model failed, trying next');
+        continue;
+      }
+    }
+    throw lastError;
   }
 
   private async ollamaChat(messages: AiMessage[], tools?: unknown[]): Promise<string> {
