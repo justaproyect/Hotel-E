@@ -141,8 +141,18 @@ async function start() {
       const hash = bcrypt.hashSync('admin123', 10);
       const client = await pool.connect();
       await client.query(`INSERT INTO admin_users (username, email, password_hash, role) VALUES ('admin', 'admin@hotel.com', $1, 'superadmin') ON CONFLICT (username) DO NOTHING`, [hash]);
+      await client.query(`
+        INSERT INTO rooms (name, description, type, capacity, price_per_night, amenities)
+        VALUES
+          ('Suite Presidencial', 'Suite de lujo con vista panorámica', 'suite', 4, 4500.00, ARRAY['WiFi', 'Jacuzzi', 'Bar', 'Aire acondicionado', 'TV 65"']),
+          ('Habitación Deluxe', 'Habitación amplia con balcón', 'deluxe', 2, 2800.00, ARRAY['WiFi', 'Balcón', 'Aire acondicionado', 'TV 50"']),
+          ('Habitación Estándar', 'Habitación cómoda y funcional', 'standard', 2, 1500.00, ARRAY['WiFi', 'Aire acondicionado', 'TV 40"']),
+          ('Habitación Familiar', 'Espacio ideal para familias', 'family', 5, 3200.00, ARRAY['WiFi', 'Cocina', 'Aire acondicionado', 'TV 55"', 'Sala de estar'])
+        ON CONFLICT DO NOTHING;
+      `);
       client.release();
       logger.info('Admin user seeded (admin / admin123)');
+      logger.info('Rooms seeded (4 habitaciones)');
     } catch (seedError) {
       logger.error({ error: seedError }, 'Seed failed (non-critical)');
     }
