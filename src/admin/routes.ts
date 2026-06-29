@@ -98,6 +98,14 @@ router.put('/rooms/:id', authMiddleware, async (req: Request, res: Response) => 
   return void res.json(room);
 });
 
+router.delete('/rooms/:id', authMiddleware, async (req: Request, res: Response) => {
+  const [room] = await db
+    .delete(rooms)
+    .where(eq(rooms.id, parseInt(req.params.id)))
+    .returning();
+  return void res.json(room);
+});
+
 router.post('/rooms/:id/publish-marketplace', authMiddleware, async (req: Request, res: Response) => {
   try {
     const listingId = await marketplace.publishRoom(parseInt(req.params.id));
