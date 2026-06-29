@@ -150,13 +150,20 @@ async function start() {
     try {
       const { rooms } = require('./database/schema');
       const { db } = require('./database/connection');
-      await db.insert(rooms).values([
-        { name: 'Suite Presidencial', description: 'Suite de lujo con vista panorámica', type: 'suite', capacity: 4, pricePerNight: '4500.00', amenities: ['WiFi', 'Jacuzzi', 'Bar', 'Aire acondicionado', 'TV 65"', 'Vista panorámica'] },
-        { name: 'Habitación Deluxe', description: 'Habitación amplia con balcón', type: 'deluxe', capacity: 2, pricePerNight: '2800.00', amenities: ['WiFi', 'Balcón', 'Aire acondicionado', 'TV 50"'] },
-        { name: 'Habitación Estándar', description: 'Habitación cómoda y funcional', type: 'standard', capacity: 2, pricePerNight: '1500.00', amenities: ['WiFi', 'Aire acondicionado', 'TV 40"'] },
-        { name: 'Habitación Familiar', description: 'Espacio ideal para familias', type: 'family', capacity: 5, pricePerNight: '3200.00', amenities: ['WiFi', 'Cocina', 'Aire acondicionado', 'TV 55"', 'Sala de estar'] },
-      ]).onConflictDoNothing();
-      logger.info('Rooms seeded (4 habitaciones)');
+      const { sql } = require('drizzle-orm');
+      const [existing] = await db.select({ count: sql`count(*)` }).from(rooms);
+      if (Number(existing.count) === 0) {
+        const roomData = [
+          { name: 'Suite Presidencial', description: 'Suite de lujo con vista panorámica', type: 'suite', capacity: 4, pricePerNight: '4500.00', amenities: ['WiFi', 'Jacuzzi', 'Bar', 'Aire acondicionado', 'TV 65"'] },
+          { name: 'Habitación Deluxe', description: 'Habitación amplia con balcón', type: 'deluxe', capacity: 2, pricePerNight: '2800.00', amenities: ['WiFi', 'Balcón', 'Aire acondicionado', 'TV 50"'] },
+          { name: 'Habitación Estándar', description: 'Habitación cómoda y funcional', type: 'standard', capacity: 2, pricePerNight: '1500.00', amenities: ['WiFi', 'Aire acondicionado', 'TV 40"'] },
+          { name: 'Habitación Familiar', description: 'Espacio ideal para familias', type: 'family', capacity: 5, pricePerNight: '3200.00', amenities: ['WiFi', 'Cocina', 'Aire acondicionado', 'TV 55"', 'Sala de estar'] },
+        ];
+        for (const r of roomData) await db.insert(rooms).values(r);
+        logger.info('Rooms seeded (4 habitaciones)');
+      } else {
+        logger.info(`Rooms already seeded (${existing.count} existentes)`);
+      }
     } catch (seedError) {
       logger.error({ error: seedError }, 'Rooms seed failed (non-critical)');
     }
