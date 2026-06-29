@@ -136,6 +136,17 @@ async function start() {
       logger.error({ error: migrateError }, 'Migration failed');
     }
 
+    try {
+      const bcrypt = require('bcryptjs');
+      const hash = bcrypt.hashSync('admin123', 10);
+      const client = await pool.connect();
+      await client.query(`INSERT INTO admin_users (username, email, password_hash, role) VALUES ('admin', 'admin@hotel.com', $1, 'superadmin') ON CONFLICT (username) DO NOTHING`, [hash]);
+      client.release();
+      logger.info('Admin user seeded (admin / admin123)');
+    } catch (seedError) {
+      logger.error({ error: seedError }, 'Seed failed (non-critical)');
+    }
+
     videoScheduler.start();
 
     cron.schedule('0 */6 * * *', async () => {
