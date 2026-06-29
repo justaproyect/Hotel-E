@@ -34,9 +34,7 @@
     "pino-pretty": "^10.3.1",
     "uuid": "^9.0.0",
     "ws": "^8.16.0",
-    "zod": "^3.22.4"
-  },
-  "devDependencies": {
+    "zod": "^3.22.4",
     "@types/bcryptjs": "^2.4.6",
     "@types/bull": "^4.10.0",
     "@types/compression": "^1.8.1",
@@ -50,9 +48,11 @@
     "@types/pg": "^8.10.9",
     "@types/uuid": "^9.0.7",
     "@types/ws": "^8.5.10",
-    "drizzle-kit": "^0.20.13",
     "javascript-obfuscator": "^4.1.0",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
+  },
+  "devDependencies": {
+    "drizzle-kit": "^0.20.13"
   }
 }
