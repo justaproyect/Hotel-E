@@ -1,4 +1,4 @@
-import { ollama } from '../utils/ollama';
+import { ai } from '../utils/ai';
 import { logger } from '../utils/logger';
 import { db } from '../database/connection';
 import { messages } from '../database/schema';
@@ -49,14 +49,6 @@ DIRECTRICES DE COMPORTAMIENTO:
     context: AgentContext,
   ): Promise<string> {
     try {
-      const available = await ollama.isAvailable();
-      if (!available) {
-        const response = this.fallbackResponse(userMessage);
-        await this.saveMessage(context.conversationId, 'user', userMessage, context.source);
-        await this.saveMessage(context.conversationId, 'assistant', response, context.source);
-        return response;
-      }
-
       const history = await this.getConversationHistory(context.conversationId);
 
       const chatMessages = [
@@ -66,7 +58,7 @@ DIRECTRICES DE COMPORTAMIENTO:
         { role: 'user' as const, content: userMessage },
       ];
 
-      const response = await ollama.chat(chatMessages, this.getTools());
+      const response = await ai.chat(chatMessages, this.getTools());
 
       await this.saveMessage(context.conversationId, 'user', userMessage, context.source);
       await this.saveMessage(context.conversationId, 'assistant', response, context.source);
@@ -76,29 +68,6 @@ DIRECTRICES DE COMPORTAMIENTO:
       logger.error({ error }, 'Agent processing error');
       return 'Lo siento, tuve un problema al procesar tu mensaje. ¿Podrías intentarlo de nuevo?';
     }
-  }
-
-  private fallbackResponse(text: string): string {
-    const lower = text.toLowerCase();
-    if (lower.includes('hola') || lower.includes('buenas') || lower.includes('hello')) {
-      return '👋 ¡Hola! Soy Hermes, el asistente virtual del hotel. ¿En qué puedo ayudarte?\n\nPuedes consultarme sobre:\n🏠 Habitaciones disponibles\n💰 Precios\n📅 Reservaciones\n📍 Ubicación';
-    }
-    if (lower.includes('precio') || lower.includes('cuesta') || lower.includes('cuanto')) {
-      return '💰 Estos son nuestros precios:\n🏨 Suite Presidencial - $4,500 MXN/noche\n🛏️ Deluxe - $2,800 MXN/noche\n🛏️ Estándar - $1,500 MXN/noche\n👨‍👩‍👧‍👧 Familiar - $3,200 MXN/noche';
-    }
-    if (lower.includes('habitacion') || lower.includes('disponible') || lower.includes('cuarto')) {
-      return '🏠 Tenemos estas habitaciones disponibles:\n• Suite Presidencial (4 pers)\n• Deluxe (2 pers)\n• Estándar (2 pers)\n• Familiar (5 pers)\n\n¿Te gustaría reservar alguna?';
-    }
-    if (lower.includes('gracias') || lower.includes('thanks') || lower.includes('bye')) {
-      return '😊 ¡De nada! Si necesitas algo más, aquí estoy para ayudarte. ¡Buen día!';
-    }
-    if (lower.includes('ubicacion') || lower.includes('direccion') || lower.includes('donde esta')) {
-      return '📍 Estamos ubicados en el centro de la ciudad. ¿Te gustaría recibir la dirección exacta o indicaciones para llegar?';
-    }
-    if (lower.includes('reserv') || lower.includes('booking') || lower.includes('apart') || lower.includes('quiero')) {
-      return '📅 Para hacer una reserva necesito:\n1️⃣ Fecha de entrada\n2️⃣ Fecha de salida\n3️⃣ Número de huéspedes\n4️⃣ Tipo de habitación\n\n¿Me puedes dar esos datos?';
-    }
-    return '🤖 Soy Hermes, el asistente del hotel. Puedo ayudarte con:\n🏠 Ver habitaciones\n💰 Consultar precios\n📅 Reservaciones\n📍 Ubicación\n\n¿Sobre qué te gustaría saber?';
   }
 
   private buildContextPrompt(ctx: AgentContext): string {
